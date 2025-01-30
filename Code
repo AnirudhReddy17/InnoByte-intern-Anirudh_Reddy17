@@ -1,0 +1,84 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+ds = pd.read_csv(r"C:\Users\ANIRUDH REDDY\Downloads\Amazon Sale Cleaned Report.csv")
+ds
+
+ds.isnull().sum()
+
+ds_clean = ds.drop(columns=['Unnamed: 0.1', 'Unnamed: 0', 'index', 'New', 'PendingS'])
+
+summary = ds_clean.isnull().sum()
+
+# Fill missing values in numerical columns with 0, categorical with 'Unknown'
+for col in ds_clean.select_dtypes(include=['float64', 'int64']):
+    ds_clean[col].fillna(0, inplace=True)
+for col in ds_clean.select_dtypes(include=['object']):
+    ds_clean[col].fillna('Unknown', inplace=True)
+
+# Step 2: Sales Overview
+# Aggregate sales over time
+sales_over_time = ds_clean.groupby('Date')['Amount'].sum().reset_index()
+orders_over_time = ds_clean.groupby('Date')['Order ID'].count().reset_index()
+
+# Plot sales trends
+plt.figure(figsize=(12,6))
+plt.plot(sales_over_time['Date'], sales_over_time['Amount'], label='Total Sales', color='blue')
+plt.title('Sales Trends Over Time')
+plt.xlabel('Date')
+plt.ylabel('Sales Amount')
+plt.legend()
+plt.grid()
+plt.show()
+
+# Step 3: Product Analysis
+# Distribution of product categories
+product_category_distribution = ds_clean['Category'].value_counts()
+
+# Visualize product category distribution
+plt.figure(figsize=(10, 6))
+sns.barplot(x=product_category_distribution.values, y=product_category_distribution.index, palette='viridis')
+plt.title('Distribution of Product Categories')
+plt.xlabel('Count')
+plt.ylabel('Category')
+plt.show()
+
+# Step 4: Fulfillment Analysis
+# Analyze fulfillment methods and their order statuses
+fulfillment_analysis = ds_clean.groupby(['Fulfilment', 'Status'])['Order ID'].count().unstack()
+
+# Visualize fulfillment analysis
+fulfillment_analysis.plot(kind='bar', stacked=True, figsize=(12, 8))
+plt.title('Fulfillment Methods by Order Status')
+plt.xlabel('Fulfillment Method')
+plt.ylabel('Order Count')
+plt.legend(title='Order Status')
+plt.show()
+
+# Step 5: Geographical Analysis
+# Sales distribution by state
+sales_by_state = ds_clean.groupby('ship-state')['Amount'].sum().sort_values(ascending=False)
+
+# Visualize sales by state
+plt.figure(figsize=(12, 8))
+sns.barplot(x=sales_by_state.values, y=sales_by_state.index, palette='coolwarm')
+plt.title('Sales Distribution by State')
+plt.xlabel('Sales Amount')
+plt.ylabel('State')
+plt.show()
+
+# Step 6: Customer Segmentation
+# Group customers by ship-city and analyze behavior
+customer_segmentation = ds_clean.groupby('ship-city')['Amount'].sum().sort_values(ascending=False).head(10)
+
+# Visualize top 10 cities by sales
+plt.figure(figsize=(10, 6))
+sns.barplot(x=customer_segmentation.values, y=customer_segmentation.index, palette='rocket')
+plt.title('Top 10 Cities by Sales')
+plt.xlabel('Sales Amount')
+plt.ylabel('City')
+plt.show()
+
+# Save cleaned data for future analysis
+ds_clean.to_csv('cleaned_sales_data.csv', index=False)
